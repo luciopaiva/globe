@@ -1,7 +1,8 @@
 
 const NUM_PARTICLES_SURFACE = 10000;
 const NUM_PARTICLES_SKY = 10000;
-const NUM_PARTICLES_RING = 6000;
+const NUM_PARTICLES_FIRST_RING = 2000;
+const NUM_PARTICLES_SECOND_RING = 6000;
 const TAU = Math.PI * 2;
 const ROT_PERIOD_IN_SECS = 30;
 const RADIUS = 250;
@@ -10,8 +11,10 @@ const LON_STEP = TAU / 60 / ROT_PERIOD_IN_SECS;  // 1 rotation per second
 const SURFACE_LON_STEP = LON_STEP * 0.6;
 const SKY_LAT_STEP = LON_STEP * 0.4;
 const SKY_LON_STEP = LON_STEP;
-const RING_INNER_RADIUS = RADIUS * 1.55;
-const RING_THICKNESS = RADIUS * .75;
+const FIRST_RING_INNER_RADIUS = RADIUS * 1.55;
+const FIRST_RING_THICKNESS = RADIUS * .10;
+const SECOND_RING_INNER_RADIUS = RADIUS * 1.70;
+const SECOND_RING_THICKNESS = RADIUS * .75;
 const SHADES_OF_GRAY = false;
 
 const randomRads = () => Math.random() * TAU;
@@ -28,7 +31,8 @@ class Globe {
         this.lightSource = {x : .40, y : 0.40, z: 0.20};
         this.particlesSky = new Float32Array(3 * NUM_PARTICLES_SKY);
         this.particlesSurface = new Float32Array(3 * NUM_PARTICLES_SURFACE);
-        this.particlesRing = new Float32Array(3 * NUM_PARTICLES_RING);
+        this.particlesFirstRing = new Float32Array(3 * NUM_PARTICLES_FIRST_RING);
+        this.particlesSecondRing = new Float32Array(3 * NUM_PARTICLES_SECOND_RING);
 
         for (let i = 0; i < NUM_PARTICLES_SURFACE * 2; i++) {
             this.particlesSurface[i * 3] = randomRads();
@@ -42,10 +46,16 @@ class Globe {
             this.particlesSky[i * 3 + 2] = this.radius + ATMOSPHERE_THICKNESS * RADIUS;
         }
 
-        for (let i = 0; i < NUM_PARTICLES_RING; i++) {
-            this.particlesRing[i * 3] = 0;
-            this.particlesRing[i * 3 + 1] = randomRads();
-            this.particlesRing[i * 3 + 2] = RING_INNER_RADIUS + Math.random() * RING_THICKNESS;
+        for (let i = 0; i < NUM_PARTICLES_FIRST_RING; i++) {
+            this.particlesFirstRing[i * 3] = 0;
+            this.particlesFirstRing[i * 3 + 1] = randomRads();
+            this.particlesFirstRing[i * 3 + 2] = FIRST_RING_INNER_RADIUS + Math.random() * FIRST_RING_THICKNESS;
+        }
+
+        for (let i = 0; i < NUM_PARTICLES_SECOND_RING; i++) {
+            this.particlesSecondRing[i * 3] = 0;
+            this.particlesSecondRing[i * 3 + 1] = randomRads();
+            this.particlesSecondRing[i * 3 + 2] = SECOND_RING_INNER_RADIUS + Math.random() * SECOND_RING_THICKNESS;
         }
 
         window.addEventListener("resize", this.resize.bind(this));
@@ -142,7 +152,8 @@ class Globe {
 
         this.drawParticles(this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 20, 100, 5, 50, 1);
         this.drawParticles(this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 30, 100, 5, 40, 0.7);
-        this.drawParticles(this.particlesRing, NUM_PARTICLES_RING, 0, SURFACE_LON_STEP, 300, 50, 5, 80, 0.7, true);
+        this.drawParticles(this.particlesFirstRing, NUM_PARTICLES_FIRST_RING, 0, SURFACE_LON_STEP, 320, 80, 5, 80, 0.7, true);
+        this.drawParticles(this.particlesSecondRing, NUM_PARTICLES_SECOND_RING, 0, SURFACE_LON_STEP, 300, 50, 5, 80, 0.7, true);
 
         this.previousTimestamp = now;
         requestAnimationFrame(this.updateFn);
