@@ -6,6 +6,9 @@ const ROT_PERIOD_IN_SECS = 30;
 const RADIUS = 300;
 const ATMOSPHERE_THICKNESS = 0.04;  // radius percent
 const LON_STEP = TAU / 60 / ROT_PERIOD_IN_SECS;  // 1 rotation per second
+const SURFACE_LON_STEP = LON_STEP * 0.6;
+const SKY_LAT_STEP = LON_STEP * 0.4;
+const SKY_LON_STEP = LON_STEP;
 
 const randomRads = () => Math.random() * TAU;
 
@@ -53,6 +56,36 @@ class Globe {
         this.canvas.setAttribute("height", this.height);
     }
 
+    drawParticles(particles, particlesLength, latStep, lonStep, hue, baseLightness, lightnessBand, particleSize) {
+        for (let i = 0; i < particlesLength; i++) {
+            const lat = particles[i * 3] + latStep;
+            const lon = particles[i * 3 + 1] + lonStep;
+
+            // move particle
+            particles[i * 3] = lat;
+            particles[i * 3 + 1] = lon;
+
+            const elevation = particles[i * 3 + 2];
+
+            const x = Math.cos(lat) * Math.cos(lon) * elevation;
+
+            // only show particle if it's facing the camera
+            if (x > 0) {
+                // consider y to be x and z to be y (camera is seeing the sphere rotating from the side)
+                const y = Math.cos(lat) * Math.sin(lon) * elevation;
+                const z = Math.sin(lat) * elevation;
+
+                const intensity = this.calculateParticleIntensity(x, y, z);
+
+                const lightness = baseLightness + intensity * lightnessBand;
+
+                this.ctx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;  // 340
+
+                this.ctx.fillRect(y + this.halfWidth | 0, this.halfHeight - z | 0, particleSize, particleSize);
+            }
+        }
+    }
+
     update(now) {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
@@ -63,67 +96,8 @@ class Globe {
         this.ctx.arc(this.halfWidth, this.halfHeight, this.radius, 0, TAU);
         this.ctx.stroke();
 
-        // draw particles on the visible side
-        for (let i = 0; i < NUM_PARTICLES_SURFACE; i++) {
-            const lat = this.particlesSurface[i * 3];
-            const lon = this.particlesSurface[i * 3 + 1] + LON_STEP * .6;
-
-            // move particle
-            this.particlesSurface[i * 3 + 1] = lon;
-
-            const elevation = this.particlesSurface[i * 3 + 2];
-
-            const x = Math.cos(lat) * Math.cos(lon) * elevation;
-
-            // only show particle if it's facing the camera
-            if (x > 0) {
-                // consider y to be x and z to be y (camera is seeing the sphere rotating from the side)
-                const y = Math.cos(lat) * Math.sin(lon) * elevation;
-                const z = Math.sin(lat) * elevation;
-
-                const intensity = this.calculateParticleIntensity(x, y, z);
-
-                const lightness = 5 + intensity * 50;
-
-                const hue = 360;
-
-                this.ctx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;  // 340
-
-                this.ctx.fillRect(y + this.halfWidth | 0, this.halfHeight - z | 0, 1, 1);
-            }
-        }
-
-        // draw particles on the visible side
-        for (let i = 0; i < NUM_PARTICLES_SKY; i++) {
-            const lat = this.particlesSky[i * 3] + LON_STEP * 0.1;
-            const lon = this.particlesSky[i * 3 + 1] + LON_STEP;
-
-            // move particle
-            this.particlesSky[i * 3 + 1] = lon;
-            this.particlesSky[i * 3] = lat;
-
-            const elevation = this.particlesSky[i * 3 + 2]; // + Math.random() * 0.02 * RADIUS;
-
-            const x = Math.cos(lat) * Math.cos(lon) * elevation;
-
-            // only show particle if it's facing the camera
-            if (x > 0) {
-                // consider y to be x and z to be y (camera is seeing the sphere rotating from the side)
-                const y = Math.cos(lat) * Math.sin(lon) * elevation;
-                const z = Math.sin(lat) * elevation;
-
-                const intensity = this.calculateParticleIntensity(x, y, z);
-
-                const lightness = 5 + intensity * 40;
-
-                // const hue = 220 + (360 - 220) * intensity;
-                const hue = 280;
-
-                this.ctx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;  // 340
-
-                this.ctx.fillRect(y + this.halfWidth | 0, this.halfHeight - z | 0, 1, 1);
-            }
-        }
+        this.drawParticles(this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 360, 5, 50, 1);
+        this.drawParticles(this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 280, 5, 40, 0.7);
 
         this.previousTimestamp = now;
         requestAnimationFrame(this.updateFn);
