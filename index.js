@@ -1,14 +1,17 @@
 
 const NUM_PARTICLES_SURFACE = 10000;
 const NUM_PARTICLES_SKY = 10000;
+const NUM_PARTICLES_RING = 10000;
 const TAU = Math.PI * 2;
 const ROT_PERIOD_IN_SECS = 30;
-const RADIUS = 300;
+const RADIUS = 250;
 const ATMOSPHERE_THICKNESS = 0.04;  // radius percent
 const LON_STEP = TAU / 60 / ROT_PERIOD_IN_SECS;  // 1 rotation per second
 const SURFACE_LON_STEP = LON_STEP * 0.6;
 const SKY_LAT_STEP = LON_STEP * 0.4;
 const SKY_LON_STEP = LON_STEP;
+const RING_INNER_RADIUS = RADIUS * 1.55;
+const RING_THICKNESS = RADIUS * .75;
 
 const randomRads = () => Math.random() * TAU;
 
@@ -24,6 +27,7 @@ class Globe {
         this.lightSource = {x : .40, y : 0.40, z: 0.20};
         this.particlesSky = new Float32Array(3 * NUM_PARTICLES_SKY);
         this.particlesSurface = new Float32Array(3 * NUM_PARTICLES_SURFACE);
+        this.particlesRing = new Float32Array(3 * NUM_PARTICLES_RING);
 
         for (let i = 0; i < NUM_PARTICLES_SURFACE * 2; i++) {
             this.particlesSurface[i * 3] = randomRads();
@@ -35,6 +39,12 @@ class Globe {
             this.particlesSky[i * 3] = randomRads();
             this.particlesSky[i * 3 + 1] = randomRads();
             this.particlesSky[i * 3 + 2] = this.radius + ATMOSPHERE_THICKNESS * RADIUS;
+        }
+
+        for (let i = 0; i < NUM_PARTICLES_RING; i++) {
+            this.particlesRing[i * 3] = 0;
+            this.particlesRing[i * 3 + 1] = randomRads();
+            this.particlesRing[i * 3 + 2] = RING_INNER_RADIUS + Math.random() * RING_THICKNESS;
         }
 
         window.addEventListener("resize", this.resize.bind(this));
@@ -56,7 +66,32 @@ class Globe {
         this.canvas.setAttribute("height", this.height);
     }
 
-    drawParticles(particles, particlesLength, latStep, lonStep, hue, baseLightness, lightnessBand, particleSize) {
+    rotateY(x, y, z, angle) {
+        return [
+            Math.cos(angle) * x - Math.sin(angle) * z,
+            y,
+            Math.sin(angle) * x + Math.cos(angle) * z
+        ];
+    }
+
+    rotateX(x, y, z, angle) {
+        return [
+            x,
+            Math.cos(angle) * y - Math.sin(angle) * z,
+            Math.sin(angle) * y + Math.cos(angle) * z
+        ];
+    }
+
+    project(x, y, z) {
+        // FixMe
+        return [
+            x,
+            y / x,
+            z / x
+        ];
+    }
+
+    drawParticles(particles, particlesLength, latStep, lonStep, hue, baseLightness, lightnessBand, particleSize, isRing) {
         for (let i = 0; i < particlesLength; i++) {
             const lat = particles[i * 3] + latStep;
             const lon = particles[i * 3 + 1] + lonStep;
@@ -67,13 +102,20 @@ class Globe {
 
             const elevation = particles[i * 3 + 2];
 
-            const x = Math.cos(lat) * Math.cos(lon) * elevation;
+            let x = Math.cos(lat) * Math.cos(lon) * elevation;
 
-            // only show particle if it's facing the camera
-            if (x > 0) {
+            // only show particle if it's facing the camera (or if particle belongs to ring)
+            if (x > 0 || isRing) {
                 // consider y to be x and z to be y (camera is seeing the sphere rotating from the side)
-                const y = Math.cos(lat) * Math.sin(lon) * elevation;
-                const z = Math.sin(lat) * elevation;
+                let y = Math.cos(lat) * Math.sin(lon) * elevation;
+                let z = Math.sin(lat) * elevation;
+
+                if (isRing) {
+                    [x, y, z] = this.rotateY(x, y, z, -Math.PI * .1);
+                    [x, y, z] = this.rotateX(x, y, z, Math.PI * .05);
+                }
+
+                // [x, y, z] = this.project(x, y, z);
 
                 const intensity = this.calculateParticleIntensity(x, y, z);
 
@@ -98,6 +140,7 @@ class Globe {
 
         this.drawParticles(this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 360, 5, 50, 1);
         this.drawParticles(this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 280, 5, 40, 0.7);
+        this.drawParticles(this.particlesRing, NUM_PARTICLES_RING, 0, SURFACE_LON_STEP, 40, 5, 80, 0.7, true);
 
         this.previousTimestamp = now;
         requestAnimationFrame(this.updateFn);
