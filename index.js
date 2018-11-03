@@ -1,7 +1,7 @@
 
 const NUM_PARTICLES_SURFACE = 10000;
 const NUM_PARTICLES_SKY = 10000;
-const NUM_PARTICLES_RING = 10000;
+const NUM_PARTICLES_RING = 6000;
 const TAU = Math.PI * 2;
 const ROT_PERIOD_IN_SECS = 30;
 const RADIUS = 250;
@@ -12,6 +12,7 @@ const SKY_LAT_STEP = LON_STEP * 0.4;
 const SKY_LON_STEP = LON_STEP;
 const RING_INNER_RADIUS = RADIUS * 1.55;
 const RING_THICKNESS = RADIUS * .75;
+const SHADES_OF_GRAY = false;
 
 const randomRads = () => Math.random() * TAU;
 
@@ -91,7 +92,7 @@ class Globe {
         ];
     }
 
-    drawParticles(particles, particlesLength, latStep, lonStep, hue, baseLightness, lightnessBand, particleSize, isRing) {
+    drawParticles(particles, particlesLength, latStep, lonStep, hue, saturation, baseLightness, lightnessBand, particleSize, isRing) {
         for (let i = 0; i < particlesLength; i++) {
             const lat = particles[i * 3] + latStep;
             const lon = particles[i * 3 + 1] + lonStep;
@@ -121,7 +122,8 @@ class Globe {
 
                 const lightness = baseLightness + intensity * lightnessBand;
 
-                this.ctx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;  // 340
+                saturation = SHADES_OF_GRAY ? 0 : saturation;
+                this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;  // 340
 
                 this.ctx.fillRect(y + this.halfWidth | 0, this.halfHeight - z | 0, particleSize, particleSize);
             }
@@ -138,9 +140,9 @@ class Globe {
         this.ctx.arc(this.halfWidth, this.halfHeight, this.radius, 0, TAU);
         this.ctx.stroke();
 
-        this.drawParticles(this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 360, 5, 50, 1);
-        this.drawParticles(this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 280, 5, 40, 0.7);
-        this.drawParticles(this.particlesRing, NUM_PARTICLES_RING, 0, SURFACE_LON_STEP, 40, 5, 80, 0.7, true);
+        this.drawParticles(this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 20, 100, 5, 50, 1);
+        this.drawParticles(this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 30, 100, 5, 40, 0.7);
+        this.drawParticles(this.particlesRing, NUM_PARTICLES_RING, 0, SURFACE_LON_STEP, 300, 50, 5, 80, 0.7, true);
 
         this.previousTimestamp = now;
         requestAnimationFrame(this.updateFn);
