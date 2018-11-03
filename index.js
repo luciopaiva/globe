@@ -1,8 +1,10 @@
 
-const NUM_PARTICLES = 10000;
+const NUM_PARTICLES_SURFACE = 10000;
+const NUM_PARTICLES_SKY = 10000;
 const TAU = Math.PI * 2;
 const ROT_PERIOD_IN_SECS = 30;
 const RADIUS = 300;
+const ATMOSPHERE_THICKNESS = 0.04;  // radius percent
 const LON_STEP = TAU / 60 / ROT_PERIOD_IN_SECS;  // 1 rotation per second
 
 const randomRads = () => Math.random() * TAU;
@@ -16,13 +18,20 @@ class Globe {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
         this.radius = RADIUS;
-        this.lightSource = {x : .40, y : 0.30, z: 0.30};
-        this.particles = new Float32Array(3 * NUM_PARTICLES);
+        this.lightSource = {x : .40, y : 0.40, z: 0.20};
+        this.particlesSky = new Float32Array(3 * NUM_PARTICLES_SKY);
+        this.particlesSurface = new Float32Array(3 * NUM_PARTICLES_SURFACE);
 
-        for (let i = 0; i < NUM_PARTICLES; i++) {
-            this.particles[i * 3] = randomRads();
-            this.particles[i * 3 + 1] = randomRads();
-            this.particles[i * 3 + 2] = this.radius;
+        for (let i = 0; i < NUM_PARTICLES_SURFACE * 2; i++) {
+            this.particlesSurface[i * 3] = randomRads();
+            this.particlesSurface[i * 3 + 1] = randomRads();
+            this.particlesSurface[i * 3 + 2] = this.radius;
+        }
+
+        for (let i = 0; i < NUM_PARTICLES_SKY; i++) {
+            this.particlesSky[i * 3] = randomRads();
+            this.particlesSky[i * 3 + 1] = randomRads();
+            this.particlesSky[i * 3 + 2] = this.radius + ATMOSPHERE_THICKNESS * RADIUS;
         }
 
         window.addEventListener("resize", this.resize.bind(this));
@@ -48,21 +57,52 @@ class Globe {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
         // draw dark circle to represent the globe
-        // this.ctx.fillStyle = "#000000";
-        // this.ctx.beginPath();
-        // this.ctx.arc(this.halfWidth, this.halfHeight, this.radius, 0, TAU);
-        // this.ctx.fill();
+        this.ctx.strokeStyle = "#020202";
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(this.halfWidth, this.halfHeight, this.radius, 0, TAU);
+        this.ctx.stroke();
 
-        let min = Number.POSITIVE_INFINITY, max = Number.NEGATIVE_INFINITY;
         // draw particles on the visible side
-        for (let i = 0; i < NUM_PARTICLES; i++) {
-            const lat = this.particles[i * 3];
-            const lon = this.particles[i * 3 + 1] + LON_STEP;
+        for (let i = 0; i < NUM_PARTICLES_SURFACE; i++) {
+            const lat = this.particlesSurface[i * 3];
+            const lon = this.particlesSurface[i * 3 + 1] + LON_STEP * .6;
 
             // move particle
-            this.particles[i * 3 + 1] = lon;
+            this.particlesSurface[i * 3 + 1] = lon;
 
-            const elevation = this.particles[i * 3 + 2] + Math.cos(lat + lon + now / 500) * 0.5 * RADIUS;
+            const elevation = this.particlesSurface[i * 3 + 2];
+
+            const x = Math.cos(lat) * Math.cos(lon) * elevation;
+
+            // only show particle if it's facing the camera
+            if (x > 0) {
+                // consider y to be x and z to be y (camera is seeing the sphere rotating from the side)
+                const y = Math.cos(lat) * Math.sin(lon) * elevation;
+                const z = Math.sin(lat) * elevation;
+
+                const intensity = this.calculateParticleIntensity(x, y, z);
+
+                const lightness = 5 + intensity * 50;
+
+                const hue = 360;
+
+                this.ctx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;  // 340
+
+                this.ctx.fillRect(y + this.halfWidth | 0, this.halfHeight - z | 0, 1, 1);
+            }
+        }
+
+        // draw particles on the visible side
+        for (let i = 0; i < NUM_PARTICLES_SKY; i++) {
+            const lat = this.particlesSky[i * 3] + LON_STEP * 0.1;
+            const lon = this.particlesSky[i * 3 + 1] + LON_STEP;
+
+            // move particle
+            this.particlesSky[i * 3 + 1] = lon;
+            this.particlesSky[i * 3] = lat;
+
+            const elevation = this.particlesSky[i * 3 + 2]; // + Math.random() * 0.02 * RADIUS;
 
             const x = Math.cos(lat) * Math.cos(lon) * elevation;
 
@@ -76,20 +116,13 @@ class Globe {
 
                 const lightness = 5 + intensity * 40;
 
-                if (lightness < min) min = lightness;
-                if (lightness > max) max = lightness;
-
-                const hue = 220 + (360 - 220) * intensity;
+                // const hue = 220 + (360 - 220) * intensity;
+                const hue = 280;
 
                 this.ctx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;  // 340
 
                 this.ctx.fillRect(y + this.halfWidth | 0, this.halfHeight - z | 0, 1, 1);
             }
-        }
-
-        if (!this.sample) {
-            this.sample = true;
-            console.info(min, max);
         }
 
         this.previousTimestamp = now;
