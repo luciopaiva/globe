@@ -1,4 +1,5 @@
 
+const SHOW_STATS = false;
 const NUM_STARS = 1000;
 const NUM_PARTICLES_SURFACE = 10000;
 const NUM_PARTICLES_SKY = 10000;
@@ -31,8 +32,10 @@ const randomRads = () => Math.random() * TAU;
 class Globe {
 
     constructor () {
-        this.satElem = document.getElementById("satellite-status");
-        this.fpsElem = document.getElementById("fps");
+        if (SHOW_STATS) {
+            this.satElem = document.getElementById("satellite-status");
+            this.fpsElem = document.getElementById("fps");
+        }
 
         this.canvas = document.createElement("canvas");
         this.ctx = this.canvas.getContext("2d");
@@ -76,8 +79,10 @@ class Globe {
         this.satellite[1] = 0;
         this.satellite[2] = SATELLITE_RADIUS;
 
-        this.fpsCount = 0;
-        setInterval(() => { this.fpsElem.innerText = "FPS: " + this.fpsCount; this.fpsCount = 0; }, 1000);
+        if (SHOW_STATS) {
+            this.fpsCount = 0;
+            setInterval(() => { this.fpsElem.innerText = "FPS: " + this.fpsCount; this.fpsCount = 0; }, 1000);
+        }
 
         window.addEventListener("resize", this.resize.bind(this));
         this.resize();
@@ -148,7 +153,7 @@ class Globe {
                 let y = Math.cos(lat) * Math.sin(lon) * elevation;
                 let z = Math.sin(lat) * elevation;
 
-                if (isSatellite) {
+                if (isSatellite && SHOW_STATS) {
                     this.satElem.innerText = `Satellite coords: ${x.toFixed(0)}, ${y.toFixed(0)}, ${z.toFixed(0)}`;
                 }
 
