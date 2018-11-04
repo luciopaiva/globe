@@ -1,13 +1,13 @@
 
 const NUM_STARS = 1000;
-const NUM_PARTICLES_SURFACE = 10000;
-const NUM_PARTICLES_SKY = 10000;
+const NUM_PARTICLES_SURFACE = 6000;
+const NUM_PARTICLES_SKY = 2000;
 const NUM_PARTICLES_FIRST_RING = 2000;
 const NUM_PARTICLES_SECOND_RING = 6000;
 const TAU = Math.PI * 2;
 const ROT_PERIOD_IN_SECS = 30;
 const RADIUS = 250;
-const ATMOSPHERE_THICKNESS = 0.04;  // radius percent
+const ATMOSPHERE_THICKNESS = 0.02;  // radius percent
 const ATMOSPHERE_RADIUS = RADIUS * (1 + ATMOSPHERE_THICKNESS);
 const LON_STEP = TAU / 60 / ROT_PERIOD_IN_SECS;  // 1 rotation per second
 const SURFACE_LON_STEP = LON_STEP * 0.6;
@@ -40,7 +40,6 @@ class Globe {
 
         this.ctx.clearRect(0, 0, this.width, this.height);
 
-        this.radius = RADIUS;
         this.lightSource = {x : .40, y : 0.40, z: 0.20};
         this.lightnessOffset = 0;
         this.stars = new Uint16Array(2 * NUM_STARS);
@@ -53,7 +52,7 @@ class Globe {
         for (let i = 0; i < NUM_PARTICLES_SURFACE; i++) {
             this.particlesSurface[i * 3] = randomRads();
             this.particlesSurface[i * 3 + 1] = randomRads();
-            this.particlesSurface[i * 3 + 2] = this.radius;
+            this.particlesSurface[i * 3 + 2] = RADIUS;
         }
 
         for (let i = 0; i < NUM_PARTICLES_SKY; i++) {
@@ -225,7 +224,7 @@ class Globe {
             this.ctx.stroke();
 
             this.drawParticles(now, this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 20, 100, 5, 50, 1);
-            this.drawParticles(now, this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 30, 100, 5, 20, 0.7);
+            this.drawParticles(now, this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 30, 100, 5, 10, 1.3);
             this.drawParticles(now, this.satellite, 1, 0, SKY_LON_STEP, 0, 100, 0, 60, 2, true, true);
             this.drawParticles(now, this.particlesFirstRing, NUM_PARTICLES_FIRST_RING, 0, SURFACE_LON_STEP, 320, 80, 5, 80, 0.7, true);
             this.drawParticles(now, this.particlesSecondRing, NUM_PARTICLES_SECOND_RING, 0, SURFACE_LON_STEP, 300, 50, 5, 80, 0.7, true);
