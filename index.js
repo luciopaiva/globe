@@ -235,13 +235,13 @@ class Globe {
                 intensity = this.calculateLightIntensity(x, y, z);
             }
 
-            if (intensity < -.5) {
-                // cull particles that are too dim to see
+            const lightness = Math.min(baseLightness + this.lightnessOffset + intensity * lightnessBand, 100);
+
+            if (lightness < 5) {
                 this.culledCount++;
                 continue;
             }
 
-            const lightness = Math.max(0, Math.min(baseLightness + this.lightnessOffset + intensity * lightnessBand, 100));
             saturation = SHADES_OF_GRAY ? 0 : saturation;
 
             this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
@@ -270,11 +270,11 @@ class Globe {
             this.ctx.fill();
             this.ctx.stroke();
 
-            this.drawParticles(now, this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 20, 100, 5+10, 50, 1);
-            this.drawParticles(now, this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 30, 100, 5+10, 10, 1.3);
+            this.drawParticles(now, this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 20, 100, 10, 50, 1);
+            this.drawParticles(now, this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 30, 100, 10, 10, 1.3);
             this.drawParticles(now, this.satellite, 1, 0, SKY_LON_STEP, 0, 100, 0, 60, 2, true, true);
-            this.drawParticles(now, this.particlesFirstRing, NUM_PARTICLES_FIRST_RING, 0, SURFACE_LON_STEP, 320, 80, 5+10, 80, 0.7, true);
-            this.drawParticles(now, this.particlesSecondRing, NUM_PARTICLES_SECOND_RING, 0, SURFACE_LON_STEP, 300, 50, 5+10, 80, 0.7, true);
+            this.drawParticles(now, this.particlesFirstRing, NUM_PARTICLES_FIRST_RING, 0, SURFACE_LON_STEP, 320, 80, 10, 80, 0.7, true);
+            this.drawParticles(now, this.particlesSecondRing, NUM_PARTICLES_SECOND_RING, 0, SURFACE_LON_STEP, 300, 50, 10, 80, 0.7, true);
         }
 
         this.fpsCount++;
