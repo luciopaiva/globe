@@ -7,6 +7,7 @@
     <style>
         body {
             background-color: black;
+            font-family: monospace;
         }
         canvas {
             position: absolute;
@@ -16,11 +17,24 @@
             /*background-image: radial-gradient(circle, #23010f 20%, #000000);*/
             /*background-image: radial-gradient(circle, #000008 20%, #000000);*/
         }
+        #satellite-status, #fps {
+            position: absolute;
+            z-index: 1;
+            color: white;
+            right: 10px;
+        }
+        #fps {
+            top: 10px;
+        }
+        #satellite-status {
+            top: 30px;
+        }
     </style>
 
     <script src="index.js" defer type="module"></script>
 </head>
 <body>
-
+<div id="fps"></div>
+<div id="satellite-status"></div>
 </body>
 </html>
