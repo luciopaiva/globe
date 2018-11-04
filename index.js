@@ -232,7 +232,13 @@ class Globe {
             if (isSatellite) {
                 intensity = (Math.cos(now / 100) + 1) / 2;
             } else {
-                intensity = this.calculateParticleIntensity(x, y, z);
+                intensity = this.calculateLightIntensity(x, y, z);
+            }
+
+            if (intensity < -.5) {
+                // cull particles that are too dim to see
+                this.culledCount++;
+                continue;
             }
 
             const lightness = Math.max(0, Math.min(baseLightness + this.lightnessOffset + intensity * lightnessBand, 100));
@@ -276,7 +282,7 @@ class Globe {
         requestAnimationFrame(this.updateFn);
     }
 
-    calculateParticleIntensity(x, y, z) {
+    calculateLightIntensity(x, y, z) {
         const len = Math.sqrt(x**2 + y**2 + z**2);
         x /= len; y /=len; z /= len;
         const dot = x * this.lightSource.x + y * this.lightSource.y + z * this.lightSource.z;
