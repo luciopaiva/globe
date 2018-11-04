@@ -17,6 +17,9 @@
             /*background-image: radial-gradient(circle, #23010f 20%, #000000);*/
             /*background-image: radial-gradient(circle, #000008 20%, #000000);*/
         }
+        .hidden {
+            display: none;
+        }
         #satellite-status, #fps {
             position: absolute;
             z-index: 1;
@@ -34,7 +37,7 @@
     <script src="index.js" defer type="module"></script>
 </head>
 <body>
-<div id="fps"></div>
-<div id="satellite-status"></div>
+<div id="fps" class="hidden"></div>
+<div id="satellite-status" class="hidden"></div>
 </body>
 </html>
