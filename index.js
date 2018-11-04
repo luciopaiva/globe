@@ -80,7 +80,7 @@ class Globe {
         }
 
         this.satellite[0] = 0;
-        this.satellite[1] = 0;
+        this.satellite[1] = .75 * TAU;
         this.satellite[2] = SATELLITE_RADIUS;
 
         this.renderedCount = 0;
