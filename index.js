@@ -193,45 +193,47 @@ class Globe {
 
             let x = Math.cos(lat) * Math.cos(lon) * elevation;
 
-            // only show particle if it's facing the camera (or if particle belongs to ring)
-            if (x > 0 || isOrbiting) {
-                // consider y to be x and z to be y (camera is seeing the sphere rotating from the side)
-                let y = Math.cos(lat) * Math.sin(lon) * elevation;
-                let z = Math.sin(lat) * elevation;
-
-                if (isSatellite && this.showStats) {
-                    this.satElem.innerText = `Satellite coords: [${x.toFixed(0)}, ${y.toFixed(0)}]`;
-                }
-
-                if (isOrbiting) {
-                    [x, y, z] = this.rotateX(x, y, z, RING_ROTATION_X_ANGLE_COS, RING_ROTATION_X_ANGLE_SIN);
-                    [x, y, z] = this.rotateY(x, y, z, RING_ROTATION_Y_ANGLE_COS, RING_ROTATION_Y_ANGLE_SIN);
-                }
-
-                if (isOrbiting && x < 0) {
-                    const distFromCenter = Math.sqrt(y**2 + z**2);
-                    if (distFromCenter < RADIUS) {
-                        this.culledCount++;
-                        continue;  // do not render stuff behind the planet
-                    }
-                }
-
-                // [x, y, z] = this.project(x, y, z);
-
-                let intensity;
-                if (isSatellite) {
-                    intensity = (Math.cos(now / 100) + 1) / 2;
-                } else {
-                    intensity = this.calculateParticleIntensity(x, y, z);
-                }
-
-                const lightness = Math.max(0, Math.min(baseLightness + this.lightnessOffset + intensity * lightnessBand, 100));
-
-                saturation = SHADES_OF_GRAY ? 0 : saturation;
-                this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-                this.ctx.fillRect(y + this.halfWidth, this.halfHeight - z, particleSize, particleSize);
-                this.renderedCount++;
+            if (x < 0 && !isOrbiting) {
+                this.culledCount++;
+                continue;  // particles on the planet are immediately culled if on the back side
             }
+
+            // consider y to be x and z to be y (camera is seeing the sphere rotating from the side)
+            let y = Math.cos(lat) * Math.sin(lon) * elevation;
+            let z = Math.sin(lat) * elevation;
+
+            if (isSatellite && this.showStats) {
+                this.satElem.innerText = `Satellite coords: [${x.toFixed(0)}, ${y.toFixed(0)}]`;
+            }
+
+            if (isOrbiting) {
+                [x, y, z] = this.rotateX(x, y, z, RING_ROTATION_X_ANGLE_COS, RING_ROTATION_X_ANGLE_SIN);
+                [x, y, z] = this.rotateY(x, y, z, RING_ROTATION_Y_ANGLE_COS, RING_ROTATION_Y_ANGLE_SIN);
+            }
+
+            if (isOrbiting && x < 0) {
+                const distFromCenter = Math.sqrt(y**2 + z**2);
+                if (distFromCenter < RADIUS) {
+                    this.culledCount++;
+                    continue;  // do not render stuff behind the planet
+                }
+            }
+
+            // [x, y, z] = this.project(x, y, z);
+
+            let intensity;
+            if (isSatellite) {
+                intensity = (Math.cos(now / 100) + 1) / 2;
+            } else {
+                intensity = this.calculateParticleIntensity(x, y, z);
+            }
+
+            const lightness = Math.max(0, Math.min(baseLightness + this.lightnessOffset + intensity * lightnessBand, 100));
+
+            saturation = SHADES_OF_GRAY ? 0 : saturation;
+            this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            this.ctx.fillRect(y + this.halfWidth, this.halfHeight - z, particleSize, particleSize);
+            this.renderedCount++;
         }
     }
 
