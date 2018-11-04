@@ -1,8 +1,8 @@
 
 const NUM_STARS = 1000;
-const NUM_PARTICLES_SURFACE = 6000;
+const NUM_PARTICLES_SURFACE = 8000;
 const NUM_PARTICLES_SKY = 2000;
-const NUM_PARTICLES_FIRST_RING = 2000;
+const NUM_PARTICLES_FIRST_RING = 1500;
 const NUM_PARTICLES_SECOND_RING = 6000;
 const TAU = Math.PI * 2;
 const ROT_PERIOD_IN_SECS = 30;
@@ -19,13 +19,13 @@ const SECOND_RING_INNER_RADIUS = RADIUS * 1.70;
 const SECOND_RING_THICKNESS = RADIUS * .75;
 const SATELLITE_RADIUS = RADIUS * 1.25;
 const SHADES_OF_GRAY = false;
+const LIGHTNESS_LEVELS = 10;
 const RING_ROTATION_X_ANGLE_IN_RADS = Math.PI * .05;
 const RING_ROTATION_Y_ANGLE_IN_RADS = -Math.PI * .05;
 const RING_ROTATION_X_ANGLE_COS = Math.cos(RING_ROTATION_X_ANGLE_IN_RADS);
 const RING_ROTATION_X_ANGLE_SIN = Math.sin(RING_ROTATION_X_ANGLE_IN_RADS);
 const RING_ROTATION_Y_ANGLE_COS = Math.cos(RING_ROTATION_Y_ANGLE_IN_RADS);
 const RING_ROTATION_Y_ANGLE_SIN = Math.sin(RING_ROTATION_Y_ANGLE_IN_RADS);
-const SORTING_MARGIN = TAU / 360;
 
 const randomRads = () => Math.random() * TAU;
 
@@ -57,42 +57,28 @@ class Globe {
         this.particlesSecondRing = new Float32Array(3 * NUM_PARTICLES_SECOND_RING);
 
         // particles have 3 parameters: latitude, longitude and elevation
-        // groups are sorted to minimize fillStyle switches, reducing CPU usage considerably
 
-        // let longitudes = Array.from(Array(NUM_PARTICLES_SURFACE), () => randomRads());
-        // longitudes.sort();
         for (let i = 0; i < NUM_PARTICLES_SURFACE; i++) {
             this.particlesSurface[i * 3] = randomRads();
             this.particlesSurface[i * 3 + 1] = randomRads();
             this.particlesSurface[i * 3 + 2] = RADIUS;
         }
-        this.sortByLatitudeAndLongitude(this.particlesSurface, NUM_PARTICLES_SURFACE);
-        for (let i = 0; i < NUM_PARTICLES_SURFACE; i++) {
-            console.info(this.particlesSurface[i * 3 + 1].toFixed(4), this.particlesSurface[i * 3].toFixed(4));
-        }
-        console.info(SORTING_MARGIN);
 
-        let longitudes = Array.from(Array(NUM_PARTICLES_SKY), () => randomRads());
-        longitudes.sort();
         for (let i = 0; i < NUM_PARTICLES_SKY; i++) {
             this.particlesSky[i * 3] = randomRads();
-            this.particlesSky[i * 3 + 1] = longitudes[i];
+            this.particlesSky[i * 3 + 1] = randomRads();
             this.particlesSky[i * 3 + 2] = ATMOSPHERE_RADIUS;
         }
 
-        longitudes = Array.from(Array(NUM_PARTICLES_FIRST_RING), () => randomRads());
-        longitudes.sort();
         for (let i = 0; i < NUM_PARTICLES_FIRST_RING; i++) {
             this.particlesFirstRing[i * 3] = 0;
-            this.particlesFirstRing[i * 3 + 1] = longitudes[i];
+            this.particlesFirstRing[i * 3 + 1] = randomRads();
             this.particlesFirstRing[i * 3 + 2] = FIRST_RING_INNER_RADIUS + Math.random() * FIRST_RING_THICKNESS;
         }
 
-        longitudes = Array.from(Array(NUM_PARTICLES_SECOND_RING), () => randomRads());
-        longitudes.sort();
         for (let i = 0; i < NUM_PARTICLES_SECOND_RING; i++) {
             this.particlesSecondRing[i * 3] = 0;
-            this.particlesSecondRing[i * 3 + 1] = longitudes[i];
+            this.particlesSecondRing[i * 3 + 1] = randomRads();
             this.particlesSecondRing[i * 3 + 2] = SECOND_RING_INNER_RADIUS + Math.random() * SECOND_RING_THICKNESS;
         }
 
@@ -122,36 +108,6 @@ class Globe {
         this.updateFn = this.update.bind(this);
         this.previousTimestamp = performance.now();
         this.update(this.previousTimestamp);
-    }
-
-    static swapParticles(collection, i, j) {
-        const lat = collection[i * 3];
-        const lon = collection[i * 3 + 1];
-        const elev = collection[i * 3 + 2];
-        collection[i * 3] = collection[j * 3];
-        collection[i * 3 + 1] = collection[j * 3 + 1];
-        collection[i * 3 + 2] = collection[j * 3 + 2];
-        collection[j * 3] = lat;
-        collection[j * 3 + 1] = lon;
-        collection[j * 3 + 2] = elev;
-    }
-
-    sortByLatitudeAndLongitude(particles, length) {
-        // bubble sort, I know, but let's just keep it simple
-        // had to implement my own sort to be able to sort the tuples in the Float32Array
-        for (let i = 0; i < length - 1; i++) {
-            for (let j = i + 1; j < length; j++) {
-                const latDiff = particles[i * 3] - particles[j * 3];
-                if (latDiff > 0) {
-                    Globe.swapParticles(particles, i, j);
-                } else if (Math.abs(latDiff) < SORTING_MARGIN) {
-                    const longDiff = particles[i * 3 + 1] - particles[j * 3 + 1];
-                    if (longDiff > 0) {
-                        Globe.swapParticles(particles, i, j);
-                    }
-                }
-            }
-        }
     }
 
     keypress(event) {
@@ -228,10 +184,10 @@ class Globe {
 
     drawParticles(now, particles, particlesLength, latStep, lonStep, hue, saturation, baseLightness, lightnessBand,
                   particleSize, isOrbiting, isSatellite) {
-        const styles = new Set();
-        let count = 0;
-        let previous = "";
-        let switches = 0;
+
+        const pixelsByLightnessIndex = Array(LIGHTNESS_LEVELS + 1);
+        for (let i = 0; i <= LIGHTNESS_LEVELS; i++) pixelsByLightnessIndex[i] = [];
+
         for (let i = 0; i < particlesLength; i++) {
             const lat = particles[i * 3] + latStep;
             const lon = particles[i * 3 + 1] + lonStep;
@@ -293,22 +249,24 @@ class Globe {
                 continue;
             }
 
-            lightness = Math.round(lightness / 10) * 10;  // trick to reduce amount of style switches
-
-            saturation = SHADES_OF_GRAY ? 0 : saturation;
-
-            const newstyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-            styles.add(this.ctx.fillStyle = newstyle);
-            count++;
-            if (newstyle !== previous) {
-                switches++;
-                previous = newstyle;
-            }
-            this.ctx.fillRect(screenX, screenY, particleSize, particleSize);
-            this.renderedCount++;
+            // trick to reduce amount of style switches
+            const lightnessIndex = Math.round(lightness / LIGHTNESS_LEVELS);
+            pixelsByLightnessIndex[lightnessIndex].push([screenX, screenY]);
         }
 
-        console.info(styles.size, count, switches);
+        saturation = SHADES_OF_GRAY ? 0 : saturation;
+
+        for (let lightnessIndex = 0; lightnessIndex <= LIGHTNESS_LEVELS; lightnessIndex++) {
+            const pixels = pixelsByLightnessIndex[lightnessIndex];
+            if (pixels.length > 0) {
+                const lightness = lightnessIndex * LIGHTNESS_LEVELS;
+                this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                for (const pixel of pixels) {
+                    this.ctx.fillRect(pixel[0], pixel[1], particleSize, particleSize);
+                    this.renderedCount++;
+                }
+            }
+        }
     }
 
     update(now) {

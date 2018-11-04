@@ -5,7 +5,9 @@
 
 A rotating globe made of thousands of particles, rendered on a 2D canvas.
 
-## Use filStyle wisely
+# Doing canvas optimization
+
+## Part 1: use filStyle wisely
 
 Setting `context.fillStyle` is expensive, but only if the value style actually changed. If you pass the same style currently being used, it doesn't seem to hurt CPU. This gave me a few ideas.
 
@@ -27,38 +29,48 @@ The fix consisted of placing points randomly and only then sorting them, longitu
 
 Phew. With all improvements together, I was able to make the code go 62% faster :-)
 
-## Part 2: analyzing number of style switches
+## Part 2: going for 60 fps
 
-    distinct-styles  fills  switches
-    4                2328   1440
-    2                994    135
-    1                1      1
-    6                1041   11
-    6                3218   11
+I decided to count how many still switches I was making. I added code to count every time one pixel draw had to use a different style than the previous one. I also counted how many different styles were used.
 
-Even by sorting surface points by longitude, the number of style switches is still pretty high. Sorting by longitude+latitude or just by latitude doesn't do any good either.
+    what        distinct-styles  fills  switches
+    surface     4                2328   1440
+    sky         2                994    135
+    satellite   1                1      1
+    inner ring  6                1041   11
+    outer ring  6                3218   11
 
-Latitude only
+This is what I had after part 1, i.e., points being sorted by longitude only. See that `surface` is making almost 1 style switch for every 2 `fillRect()` calls. This is bad! Looks like sorting didn't help that much, al least not for surface points (rings and sky seem to be doing pretty well, though).
 
-4 2334 1203
-2 1004 152
-1 1 1
-6 1043 11
-6 3225 11
+Sorting by longitude+latitude, latitude+longitude or just by latitude doesn't do any good either:
 
-Longitude + latitude
+### Latitude only
 
-4 2387 1449
-2 1004 182
-1 1 1
-6 1068 11
-6 3228 11
+    what        distinct-styles  fills  switches
+    surface     4                2334   1203
+    sky         2                1004   152
+    satellite   1                1      1
+    inner ring  6                1043   11
+    outer ring  6                3225   11
 
-Latitude + longitude
+### Longitude + latitude
 
-4 2290 1156
-2 986 164
-1 1 1
-6 1045 11
-6 3265 11
+    what        distinct-styles  fills  switches
+    surface     4                2387   1449
+    sky         2                1004   182
+    satellite   1                1      1
+    inner ring  6                1068   11
+    outer ring  6                3228   11
 
+### Latitude + longitude
+
+    what        distinct-styles  fills  switches
+    surface     4                2290   1156
+    sky         2                986    164
+    satellite   1                1      1
+    inner ring  6                1045   11
+    outer ring  6                3265   11
+
+So I went for a different approach. Instead of sorting points on creation, I decided to separate them during rendering, grouping by style. This guarantees minimum style switching at the expense of allocating new arrays for every frame (can be avoided with more code) and doing some extra memory copies.
+
+This new approach finally achieved 60 FPS and it did so well that I was able to stuff some more surface particles :-)
