@@ -130,7 +130,7 @@ class Globe {
                 let z = Math.sin(lat) * elevation;
 
                 if (isRing) {
-                    [x, y, z] = this.rotateY(x, y, z, -Math.PI * .1);
+                    [x, y, z] = this.rotateY(x, y, z, -Math.PI * .05);
                     [x, y, z] = this.rotateX(x, y, z, Math.PI * .05);
                 }
 
