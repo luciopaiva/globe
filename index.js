@@ -221,6 +221,13 @@ class Globe {
 
             // [x, y, z] = this.project(x, y, z);
 
+            const screenX = y + this.halfWidth;
+            const screenY = this.halfHeight - z;
+            if (screenX < 0 || screenX > this.width || screenY < 0 || screenY > this.height) {
+                this.culledCount++;
+                continue;
+            }
+
             let intensity;
             if (isSatellite) {
                 intensity = (Math.cos(now / 100) + 1) / 2;
@@ -229,10 +236,10 @@ class Globe {
             }
 
             const lightness = Math.max(0, Math.min(baseLightness + this.lightnessOffset + intensity * lightnessBand, 100));
-
             saturation = SHADES_OF_GRAY ? 0 : saturation;
+
             this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-            this.ctx.fillRect(y + this.halfWidth, this.halfHeight - z, particleSize, particleSize);
+            this.ctx.fillRect(screenX, screenY, particleSize, particleSize);
             this.renderedCount++;
         }
     }
