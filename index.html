@@ -19,24 +19,30 @@
         .hidden {
             display: none;
         }
-        #satellite-status, #fps {
+        #stats {
             position: absolute;
             z-index: 1;
             color: white;
-            right: 10px;
-        }
-        #fps {
             top: 10px;
-        }
-        #satellite-status {
-            top: 30px;
+            right: 10px;
+            text-align: right;
         }
     </style>
 
     <script src="index.js" defer type="module"></script>
 </head>
 <body>
-<div id="fps" class="hidden"></div>
-<div id="satellite-status" class="hidden"></div>
+<div id="stats">
+    <div id="fps">?</div>
+    <div id="satellite-status">?</div>
+    <div id="rendered-particles">?</div>
+    <div id="culled-particles">?</div>
+    <div id="lightness-offset">?</div>
+    <br>
+    <div>Keys</div>
+    <div>s: toggle stats</div>
+    <div>+-0: lightness</div>
+    <div>space: pause</div>
+</div>
 </body>
 </html>

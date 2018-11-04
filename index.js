@@ -31,9 +31,15 @@ const randomRads = () => Math.random() * TAU;
 class Globe {
 
     constructor () {
-        this.showStats = false;
+        this.showStats = true;
+        this.statsElem = document.getElementById("stats");
+        !this.showStats && this.statsElem.classList.add("hidden");
         this.satElem = document.getElementById("satellite-status");
         this.fpsElem = document.getElementById("fps");
+        this.renderedCountElem = document.getElementById("rendered-particles");
+        this.culledCountElem = document.getElementById("culled-particles");
+        this.lightnessOffsetElem = document.getElementById("lightness-offset");
+        this.updateLightnessOffset();
 
         this.canvas = document.createElement("canvas");
         this.ctx = this.canvas.getContext("2d");
@@ -77,8 +83,10 @@ class Globe {
         this.satellite[1] = 0;
         this.satellite[2] = SATELLITE_RADIUS;
 
+        this.renderedCount = 0;
+        this.culledCount = 0;
         this.fpsCount = 0;
-        setInterval(() => { this.fpsElem.innerText = "FPS: " + this.fpsCount; this.fpsCount = 0; }, 1000);
+        setInterval(this.updateStats.bind(this), 1000);
 
         window.addEventListener("resize", this.resize.bind(this));
         this.resize();
@@ -101,9 +109,9 @@ class Globe {
 
     keypress(event) {
         switch (event.key) {
-            case "0": this.lightnessOffset = 0; break;
-            case "-": this.lightnessOffset -= 5; break;
-            case "=": this.lightnessOffset += 5; break;
+            case "0": this.updateLightnessOffset(); break;
+            case "-": this.updateLightnessOffset(-5); break;
+            case "=": this.updateLightnessOffset(5); break;
             case "s": this.toggleStats(); break;
             case "p":
             case " ":
@@ -114,8 +122,27 @@ class Globe {
 
     toggleStats() {
         this.showStats = !this.showStats;
-        this.fpsElem.classList.toggle("hidden");
-        this.satElem.classList.toggle("hidden");
+        this.statsElem.classList.toggle("hidden");
+    }
+
+    updateStats() {
+        this.fpsElem.innerText = "FPS: " + this.fpsCount;
+        this.renderedCount = Math.round(this.renderedCount / this.fpsCount);
+        this.renderedCountElem.innerText = `Rendered particles: ${this.renderedCount}`;
+        this.culledCount = Math.round(this.culledCount / this.fpsCount);
+        this.culledCountElem.innerText = `Culled particles: ${this.culledCount}`;
+        this.fpsCount = 0;
+        this.renderedCount = 0;
+        this.culledCount = 0;
+    }
+
+    updateLightnessOffset(delta) {
+        if (delta === undefined) {
+            this.lightnessOffset = 0;
+        } else {
+            this.lightnessOffset += delta;
+        }
+        this.lightnessOffsetElem.innerText = `Lightness offset: ${this.lightnessOffset}`;
     }
 
     resize() {
@@ -173,12 +200,20 @@ class Globe {
                 let z = Math.sin(lat) * elevation;
 
                 if (isSatellite && this.showStats) {
-                    this.satElem.innerText = `Satellite coords: ${x.toFixed(0)}, ${y.toFixed(0)}, ${z.toFixed(0)}`;
+                    this.satElem.innerText = `Satellite coords: [${x.toFixed(0)}, ${y.toFixed(0)}]`;
                 }
 
                 if (isOrbiting) {
                     [x, y, z] = this.rotateX(x, y, z, RING_ROTATION_X_ANGLE_COS, RING_ROTATION_X_ANGLE_SIN);
                     [x, y, z] = this.rotateY(x, y, z, RING_ROTATION_Y_ANGLE_COS, RING_ROTATION_Y_ANGLE_SIN);
+                }
+
+                if (isOrbiting && x < 0) {
+                    const distFromCenter = Math.sqrt(y**2 + z**2);
+                    if (distFromCenter < RADIUS) {
+                        this.culledCount++;
+                        continue;  // do not render stuff behind the planet
+                    }
                 }
 
                 // [x, y, z] = this.project(x, y, z);
@@ -193,13 +228,9 @@ class Globe {
                 const lightness = Math.max(0, Math.min(baseLightness + this.lightnessOffset + intensity * lightnessBand, 100));
 
                 saturation = SHADES_OF_GRAY ? 0 : saturation;
-                this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;  // 340
-
-                if (isSatellite && x < 0 && Math.abs(y) < RADIUS) {
-                    continue;  // do not render satellite if behind planet
-                }
-
+                this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
                 this.ctx.fillRect(y + this.halfWidth, this.halfHeight - z, particleSize, particleSize);
+                this.renderedCount++;
             }
         }
     }
@@ -213,6 +244,7 @@ class Globe {
                 this.ctx.fillStyle = `hsl(0, 0%, ${brightness}%)`;
                 this.ctx.fillRect(this.stars[i * 2], this.stars[i * 2 + 1], 1, 1);
             }
+            this.renderedCount += NUM_STARS;
 
             // draw dark circle to represent the globe
             this.ctx.strokeStyle = "#020202";
@@ -223,11 +255,11 @@ class Globe {
             this.ctx.fill();
             this.ctx.stroke();
 
-            this.drawParticles(now, this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 20, 100, 5, 50, 1);
-            this.drawParticles(now, this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 30, 100, 5, 10, 1.3);
+            this.drawParticles(now, this.particlesSurface, NUM_PARTICLES_SURFACE, 0, SURFACE_LON_STEP, 20, 100, 5+10, 50, 1);
+            this.drawParticles(now, this.particlesSky, NUM_PARTICLES_SKY, SKY_LAT_STEP, SKY_LON_STEP, 30, 100, 5+10, 10, 1.3);
             this.drawParticles(now, this.satellite, 1, 0, SKY_LON_STEP, 0, 100, 0, 60, 2, true, true);
-            this.drawParticles(now, this.particlesFirstRing, NUM_PARTICLES_FIRST_RING, 0, SURFACE_LON_STEP, 320, 80, 5, 80, 0.7, true);
-            this.drawParticles(now, this.particlesSecondRing, NUM_PARTICLES_SECOND_RING, 0, SURFACE_LON_STEP, 300, 50, 5, 80, 0.7, true);
+            this.drawParticles(now, this.particlesFirstRing, NUM_PARTICLES_FIRST_RING, 0, SURFACE_LON_STEP, 320, 80, 5+10, 80, 0.7, true);
+            this.drawParticles(now, this.particlesSecondRing, NUM_PARTICLES_SECOND_RING, 0, SURFACE_LON_STEP, 300, 50, 5+10, 80, 0.7, true);
         }
 
         this.fpsCount++;
