@@ -19,6 +19,12 @@ const SECOND_RING_INNER_RADIUS = RADIUS * 1.70;
 const SECOND_RING_THICKNESS = RADIUS * .75;
 const SATELLITE_RADIUS = RADIUS * 1.25;
 const SHADES_OF_GRAY = false;
+const RING_ROTATION_X_ANGLE_IN_RADS = Math.PI * .05;
+const RING_ROTATION_Y_ANGLE_IN_RADS = -Math.PI * .05;
+const RING_ROTATION_X_ANGLE_COS = Math.cos(RING_ROTATION_X_ANGLE_IN_RADS);
+const RING_ROTATION_X_ANGLE_SIN = Math.sin(RING_ROTATION_X_ANGLE_IN_RADS);
+const RING_ROTATION_Y_ANGLE_COS = Math.cos(RING_ROTATION_Y_ANGLE_IN_RADS);
+const RING_ROTATION_Y_ANGLE_SIN = Math.sin(RING_ROTATION_Y_ANGLE_IN_RADS);
 
 const randomRads = () => Math.random() * TAU;
 
@@ -97,19 +103,19 @@ class Globe {
         this.canvas.setAttribute("height", this.height);
     }
 
-    rotateY(x, y, z, angle) {
+    rotateY(x, y, z, cos, sin) {
         return [
-            Math.cos(angle) * x - Math.sin(angle) * z,
+            cos * x - sin * z,
             y,
-            Math.sin(angle) * x + Math.cos(angle) * z
+            sin * x + cos * z
         ];
     }
 
-    rotateX(x, y, z, angle) {
+    rotateX(x, y, z, cos, sin) {
         return [
             x,
-            Math.cos(angle) * y - Math.sin(angle) * z,
-            Math.sin(angle) * y + Math.cos(angle) * z
+            cos * y - sin * z,
+            sin * y + cos * z
         ];
     }
 
@@ -147,8 +153,8 @@ class Globe {
                 }
 
                 if (isOrbiting) {
-                    [x, y, z] = this.rotateY(x, y, z, -Math.PI * .05);
-                    [x, y, z] = this.rotateX(x, y, z, Math.PI * .05);
+                    [x, y, z] = this.rotateX(x, y, z, RING_ROTATION_X_ANGLE_COS, RING_ROTATION_X_ANGLE_SIN);
+                    [x, y, z] = this.rotateY(x, y, z, RING_ROTATION_Y_ANGLE_COS, RING_ROTATION_Y_ANGLE_SIN);
                 }
 
                 // [x, y, z] = this.project(x, y, z);
