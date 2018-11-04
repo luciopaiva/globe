@@ -55,6 +55,8 @@ class Globe {
         this.particlesFirstRing = new Float32Array(3 * NUM_PARTICLES_FIRST_RING);
         this.particlesSecondRing = new Float32Array(3 * NUM_PARTICLES_SECOND_RING);
 
+        // particles have 3 parameters: latitude, longitude and elevation
+
         for (let i = 0; i < NUM_PARTICLES_SURFACE; i++) {
             this.particlesSurface[i * 3] = randomRads();
             this.particlesSurface[i * 3 + 1] = randomRads();
@@ -235,12 +237,14 @@ class Globe {
                 intensity = this.calculateLightIntensity(x, y, z);
             }
 
-            const lightness = Math.min(baseLightness + this.lightnessOffset + intensity * lightnessBand, 100);
+            let lightness = Math.min(baseLightness + this.lightnessOffset + intensity * lightnessBand, 100);
 
             if (lightness < 5) {
                 this.culledCount++;
                 continue;
             }
+
+            lightness = Math.round(lightness / 10) * 10;  // trick to reduce amount of style switches
 
             saturation = SHADES_OF_GRAY ? 0 : saturation;
 
