@@ -3,11 +3,13 @@
 
 ![](screenshot.png)
 
-A rotating globe made of thousands of particles, rendered on a 2D canvas.
+A rotating globe made of thousands of particles, rendered on a 2D canvas using vanilla Javascript. I admit the final scene is a bit darker than what I wanted, so you may need to increase monitor brightness to be able to fully see it.
 
-# Doing canvas optimization
+## Doing canvas optimization
 
-## Part 1: use filStyle wisely
+Here's some annotations I did while I was developing it. The challenge here was to see how many particles could I render using HTML5 canvas in 2D rendering mode, doing all model and projection calculations by myself.
+
+### Part 1: use filStyle wisely
 
 Setting `context.fillStyle` is expensive, but only if the value style actually changed. If you pass the same style currently being used, it doesn't seem to hurt CPU. This gave me a few ideas.
 
@@ -29,7 +31,7 @@ The fix consisted of placing points randomly and only then sorting them, longitu
 
 Phew. With all improvements together, I was able to make the code go 62% faster :-)
 
-## Part 2: going for 60 fps
+### Part 2: going for 60 fps
 
 I decided to count how many still switches I was making. I added code to count every time one pixel draw had to use a different style than the previous one. I also counted how many different styles were used.
 
@@ -44,7 +46,7 @@ This is what I had after part 1, i.e., points being sorted by longitude only. Se
 
 Sorting by longitude+latitude, latitude+longitude or just by latitude doesn't do any good either:
 
-### Latitude only
+#### Latitude only
 
     what        distinct-styles  fills  switches
     surface     4                2334   1203
@@ -53,7 +55,7 @@ Sorting by longitude+latitude, latitude+longitude or just by latitude doesn't do
     inner ring  6                1043   11
     outer ring  6                3225   11
 
-### Longitude + latitude
+#### Longitude + latitude
 
     what        distinct-styles  fills  switches
     surface     4                2387   1449
@@ -62,7 +64,7 @@ Sorting by longitude+latitude, latitude+longitude or just by latitude doesn't do
     inner ring  6                1068   11
     outer ring  6                3228   11
 
-### Latitude + longitude
+#### Latitude + longitude
 
     what        distinct-styles  fills  switches
     surface     4                2290   1156
